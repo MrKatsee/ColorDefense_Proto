@@ -22,8 +22,6 @@ public class ServerManager : MonoBehaviour
     bool isServerOn;
     int port = 19900;
 
-    
-
     void Update()
     {
         if (!isServerOn) return;
@@ -115,7 +113,6 @@ public class ServerManager : MonoBehaviour
         StartAccept();
     }
 }
-
 
 public class Client
 {

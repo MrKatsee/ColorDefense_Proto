@@ -2,17 +2,33 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+public delegate void OnJoystickMove(Vector3 _vec);
+
 public class InputManager : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
+    private static InputManager instance = null;
+    public static InputManager Instance
     {
-        
+        get { return instance; }
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Awake()
     {
-        
+        if (instance == null) instance = this;
     }
+
+    private void Start()
+    {
+        joystick = FindObjectOfType<Joystick>();
+    }
+
+    public event OnJoystickMove onMove;
+
+    Joystick joystick;
+
+    private void Update()
+    {
+        onMove(new Vector3(joystick.Horizontal, 0, joystick.Vertical));
+    }
+
 }

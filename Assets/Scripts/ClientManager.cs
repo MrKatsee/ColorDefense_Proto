@@ -5,6 +5,8 @@ using System.IO;
 using System.Net.Sockets;
 using UnityEngine;
 
+public enum PlayerNum { P1 = 1, P2 }
+
 public class ClientManager : MonoBehaviour
 {
     TcpClient client;
@@ -35,7 +37,7 @@ public class ClientManager : MonoBehaviour
 
             connected = true;
 
-            SendMsg("Connected");
+            SendMsg("Type:Notice&Value:ConnectComplete");
         }
         catch (Exception e)
         {
@@ -72,7 +74,7 @@ public class ClientManager : MonoBehaviour
         if (!connected)
             return;
 
-        string data = msg;
+        string data = string.Format("Player:{0}&{1}", PlayManager.Instance.pNum.ToString(), msg);
 
         writer.WriteLine(data);
         writer.Flush();
