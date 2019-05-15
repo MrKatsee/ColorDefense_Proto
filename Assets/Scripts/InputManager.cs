@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public delegate void OnJoystickMove(Vector3 _vec);
+public delegate void OnJoystickMove(PlayerNum _pNum, Vector3 _vec);
 
 public class InputManager : MonoBehaviour
 {
@@ -28,7 +28,23 @@ public class InputManager : MonoBehaviour
 
     private void Update()
     {
-        onMove(new Vector3(joystick.Horizontal, 0, joystick.Vertical));
+        if (!(joystick.Horizontal == 0 && joystick.Vertical == 0))
+           SendMove(new Vector3(joystick.Horizontal, 0, joystick.Vertical));
     }
 
+    void SendMove(Vector3 vec)
+    {
+        if (!PlayManager.Instance.gameStart)
+            return;
+
+        string valueData = string.Format("{0},{1},{2}", vec.x.ToString(), vec.y.ToString(), vec.z.ToString());
+
+        string data = string.Format("Type:COMMAND&CommandType:MOVE&Value:{0}", valueData);
+        ClientManager.Instance.SendMsg(data);
+    }
+
+    public void CallMove(PlayerNum _pNum, Vector3 _vec)
+    {
+        onMove(_pNum, _vec);
+    }
 }

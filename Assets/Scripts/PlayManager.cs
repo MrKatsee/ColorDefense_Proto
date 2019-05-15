@@ -17,8 +17,9 @@ public class PlayManager : MonoBehaviour
 
     private void Start()
     {
+
     }
 
     public PlayerNum pNum;
-
+    public bool gameStart = false;
 }

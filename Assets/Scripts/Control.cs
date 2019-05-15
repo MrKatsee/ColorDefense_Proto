@@ -11,7 +11,7 @@ public class Control : MonoBehaviour
 
     float spd = 0.1f;
 
-    private void Move(Vector3 _vec)
+    private void Move(PlayerNum pNum, Vector3 _vec)
     {
         Vector3 vec = _vec.normalized;
 

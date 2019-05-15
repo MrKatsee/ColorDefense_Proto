@@ -5,7 +5,7 @@ using System.IO;
 using System.Net.Sockets;
 using UnityEngine;
 
-public enum PlayerNum { P1 = 1, P2 }
+public enum PlayerNum { P1 = 1, P2, ERROR }
 
 public class ClientManager : MonoBehaviour
 {
@@ -37,7 +37,7 @@ public class ClientManager : MonoBehaviour
 
             connected = true;
 
-            SendMsg("Type:Notice&Value:ConnectComplete");
+            SendMsg("Type:NOTICE&Value:CONNECTNOTICE");
         }
         catch (Exception e)
         {

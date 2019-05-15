@@ -6,6 +6,8 @@ using System.Net;
 using System.Net.Sockets;
 using UnityEngine;
 
+public enum MsgType { NOTICE }
+
 public class ServerManager : MonoBehaviour
 {
     private static ServerManager instance = null;
@@ -60,9 +62,54 @@ public class ServerManager : MonoBehaviour
 
     }
 
+    //Player:P1&Type:Notice&Value:ConnectNotice
+
     void OnIncommingData(TcpClient c, string data)
     {
-        Debug.Log("Msg : " + data);
+        PlayerNum recvPlayer = PlayerNum.ERROR;
+        string[] splitData = data.Split('&');
+        string[] valueData;
+        string[] playerData = splitData[0].Split(':');
+        switch(playerData[1])
+        {
+            case "P1":
+                recvPlayer = PlayerNum.P1;
+                break;
+            case "P2":
+                recvPlayer = PlayerNum.P2;
+                break;
+        }
+        string[] typeData = splitData[1].Split(':');
+        switch(typeData[1])
+        {
+            case "NOTICE":
+                valueData = splitData[2].Split(':');
+
+                switch(valueData[1])
+                {
+                    case "CONNECTNOTICE":
+                        UIManager.Instance.SetText_PlayerConnected(recvPlayer);
+                        break;
+                }
+                break;
+
+            case "COMMAND":
+                string[] commandTypeData = splitData[2].Split(':');
+
+                switch(commandTypeData[1])
+                {
+                    case "MOVE":
+                        valueData = splitData[3].Split(':');
+
+                        string[] vec_String = valueData[1].Split(',');
+                        Vector3 vec = new Vector3(int.Parse(vec_String[0]), int.Parse(vec_String[1]), int.Parse(vec_String[2]));
+
+                        InputManager.Instance.CallMove(recvPlayer, vec);
+                        break;
+                }
+                break;
+        }
+
     }
 
     bool IsConnected(TcpClient c)
