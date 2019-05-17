@@ -30,6 +30,8 @@ public class UIManager : MonoBehaviour
         ClientManager.Instance.ConnectToServer();
     }
 
+
+
     public void Host_StartGame()
     {
         menu_Host.SetActive(false);
@@ -54,5 +56,7 @@ public class UIManager : MonoBehaviour
                 break;
         }
     }
+
+
 
 }

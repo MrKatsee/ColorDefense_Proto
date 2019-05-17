@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class Control : MonoBehaviour
 {
+    public PlayerData pData;
+
     private void Start()
     {
         InputManager.Instance.onMove += new OnJoystickMove(Move);
@@ -13,6 +15,9 @@ public class Control : MonoBehaviour
 
     private void Move(PlayerNum pNum, Vector3 _vec)
     {
+        if (pNum != pData.pNum)
+            return;
+
         Vector3 vec = _vec.normalized;
 
         transform.Translate(vec * spd);

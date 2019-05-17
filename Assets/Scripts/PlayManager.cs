@@ -15,11 +15,19 @@ public class PlayManager : MonoBehaviour
         if (instance == null) instance = this;
     }
 
-    private void Start()
-    {
-
-    }
-
     public PlayerNum pNum;
     public bool gameStart = false;
+
+    public List<PlayerData> players = new List<PlayerData>();
+
+    public void SetPlayer(PlayerNum _pNum)
+    {
+       foreach (var p in players)
+        {
+            if (p.pNum == _pNum)
+            {
+                p.gameObject.SetActive(true);
+            }
+        }
+    }
 }

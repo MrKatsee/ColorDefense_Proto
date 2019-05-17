@@ -89,6 +89,7 @@ public class ServerManager : MonoBehaviour
                 {
                     case "CONNECTNOTICE":
                         UIManager.Instance.SetText_PlayerConnected(recvPlayer);
+                        PlayManager.Instance.SetPlayer(recvPlayer);
                         break;
                 }
                 break;
@@ -102,7 +103,7 @@ public class ServerManager : MonoBehaviour
                         valueData = splitData[3].Split(':');
 
                         string[] vec_String = valueData[1].Split(',');
-                        Vector3 vec = new Vector3(int.Parse(vec_String[0]), int.Parse(vec_String[1]), int.Parse(vec_String[2]));
+                        Vector3 vec = new Vector3(float.Parse(vec_String[0]), float.Parse(vec_String[1]), float.Parse(vec_String[2]));
 
                         InputManager.Instance.CallMove(recvPlayer, vec);
                         break;
