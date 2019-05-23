@@ -48,7 +48,7 @@ public class ServerManager : MonoBehaviour
 
                         if (data != null)
                         {
-                            OnIncommingData(c.client, data);
+                            OnIncommingData(c, data);
                         }
                     }
 
@@ -64,13 +64,15 @@ public class ServerManager : MonoBehaviour
 
     //Player:P1&Type:Notice&Value:ConnectNotice
 
-    void OnIncommingData(TcpClient c, string data)
+    void OnIncommingData(Client c, string data)
     {
+        Debug.Log(data);
+
         PlayerNum recvPlayer = PlayerNum.ERROR;
         string[] splitData = data.Split('&');
         string[] valueData;
         string[] playerData = splitData[0].Split(':');
-        switch(playerData[1])
+        switch (playerData[1])
         {
             case "P1":
                 recvPlayer = PlayerNum.P1;
@@ -80,16 +82,29 @@ public class ServerManager : MonoBehaviour
                 break;
         }
         string[] typeData = splitData[1].Split(':');
-        switch(typeData[1])
+        switch (typeData[1])
         {
             case "NOTICE":
                 valueData = splitData[2].Split(':');
 
-                switch(valueData[1])
+                switch (valueData[1])
                 {
                     case "CONNECTNOTICE":
-                        UIManager.Instance.SetText_PlayerConnected(recvPlayer);
-                        PlayManager.Instance.SetPlayer(recvPlayer);
+                        c.pNum = recvPlayer;
+                        
+                        foreach (var cl in clients)
+                        {
+                            if (cl.pNum != recvPlayer)
+                            {
+                                UniCast(recvPlayer, cl.pNum, "Type:NOTICE&Value:CONNECTCOMPLETE");
+                            }
+                        }
+
+                        BroadCast(recvPlayer, "Type:NOTICE&Value:CONNECTCOMPLETE");
+                        break;
+                        
+                    case "GAMESTART":
+                        BroadCast(recvPlayer, "Type:NOTICE&Value:GAMESTART");
                         break;
                 }
                 break;
@@ -97,15 +112,10 @@ public class ServerManager : MonoBehaviour
             case "COMMAND":
                 string[] commandTypeData = splitData[2].Split(':');
 
-                switch(commandTypeData[1])
+                switch (commandTypeData[1])
                 {
                     case "MOVE":
-                        valueData = splitData[3].Split(':');
-
-                        string[] vec_String = valueData[1].Split(',');
-                        Vector3 vec = new Vector3(float.Parse(vec_String[0]), float.Parse(vec_String[1]), float.Parse(vec_String[2]));
-
-                        InputManager.Instance.CallMove(recvPlayer, vec);
+                        BroadCast(recvPlayer, "Type:COMMAND&CommandType:MOVE&" + splitData[3]); ;
                         break;
                 }
                 break;
@@ -134,6 +144,50 @@ public class ServerManager : MonoBehaviour
         {
             return false;
         }
+    }
+
+    void UniCast(PlayerNum recvPNum, PlayerNum pNum, string msg)
+    {
+        if (!isServerOn)
+            return;
+
+        StreamWriter writer = new StreamWriter(GetClientByPNum(recvPNum).client.GetStream());
+
+        string data = string.Format("Player:{0}&{1}", pNum.ToString(), msg);
+
+        writer.WriteLine(data);
+        writer.Flush();
+    }
+
+    void BroadCast(PlayerNum pNum, string msg)
+    {
+        if (!isServerOn)
+            return;
+
+        foreach(var c in clients)
+        {
+            StreamWriter writer = new StreamWriter(c.client.GetStream());
+
+            string data = string.Format("Player:{0}&{1}", pNum.ToString(), msg);
+
+            Debug.Log(c.pNum.ToString() + " " + data);
+
+            writer.WriteLine(data);
+            writer.Flush();
+        }
+    }
+
+    Client GetClientByPNum(PlayerNum pNum)
+    {
+        foreach(var c in clients)
+        {
+            if (c.pNum == pNum)
+            {
+                return c;
+            }
+        }
+
+        throw new Exception($"No Client having pNum : {pNum.ToString()}");
     }
 
     public void Init_Server()
@@ -165,6 +219,7 @@ public class ServerManager : MonoBehaviour
 public class Client
 {
     public TcpClient client;
+    public PlayerNum pNum;
 
     public Client(TcpClient _client)
     {
