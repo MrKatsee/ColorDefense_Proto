@@ -57,8 +57,14 @@ public class UIManager : MonoBehaviour
         menu_Lobby.SetActive(true);
     }
 
-    public void Host_StartGame()
+    public void Host_StartGameButton()
     {
+        ClientManager.Instance.SendMsg("Type:NOTICE&Value:GAMESTART");
+    }
+
+    public void StartGame()
+    {
+
         menu_Host.SetActive(false);
         menu_Lobby.SetActive(false);
 

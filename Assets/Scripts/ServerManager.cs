@@ -127,6 +127,8 @@ public class ServerManager : MonoBehaviour
                                     }
                                 }
 
+                                BroadCast(recvPlayer, "Type:NOTICE&Value:CONNECTCOMPLETE");
+
                                 foreach (var cl in clients)
                                 {
                                     
@@ -136,7 +138,6 @@ public class ServerManager : MonoBehaviour
                                     }
                                 }
 
-                                BroadCast(recvPlayer, "Type:NOTICE&Value:CONNECTCOMPLETE");
                                 break;
 
                             case "GAMESTART":
@@ -193,8 +194,9 @@ public class ServerManager : MonoBehaviour
 
         string data = string.Format("Player:{0}&{1}", pNum.ToString(), msg);
 
-        writer.WriteLine(msg);
+        writer.WriteLineAsync(data);
         writer.Flush();
+
     }
 
     void BroadCast(PlayerNum pNum, string msg)
@@ -210,7 +212,9 @@ public class ServerManager : MonoBehaviour
 
             //Debug.Log(c.pNum.ToString() + " " + data);
 
-            writer.WriteLine(data);
+            MyDebug.Log("Broadcast: " + data);
+
+            writer.WriteLineAsync(data);
             writer.Flush();
         }
     }

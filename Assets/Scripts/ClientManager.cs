@@ -64,8 +64,7 @@ public class ClientManager : MonoBehaviour
             reader = new StreamReader(stream);
 
             connected = true;
-
-
+            
             recvThread = new Thread(new ThreadStart(RecvMsg));
             recvThread.Start();
 
@@ -89,7 +88,7 @@ public class ClientManager : MonoBehaviour
                 string data = reader.ReadLine();
 
                 Debug.Log(data);
-
+                MyDebug.Log(data);
                 if (data != null)
                 {
                     SyncEnqueue(data);
@@ -148,7 +147,7 @@ public class ClientManager : MonoBehaviour
             for (int loop = 0; loop < msgCount; ++loop)
             {
                 string data = SyncDequeue();
-                Debug.Log(data);
+                //Debug.Log(data);
 
                 PlayerNum recvPlayer = PlayerNum.ERROR;
                 string[] splitData = data.Split('&');
@@ -177,7 +176,7 @@ public class ClientManager : MonoBehaviour
                                 PlayManager.Instance.SetPlayer(recvPlayer);
                                 break;
                             case "GAMESTART":
-                                UIManager.Instance.Host_StartGame();
+                                UIManager.Instance.StartGame();
                                 break;
                         }
                         break;
