@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using UnityEngine;
 
 public enum MsgType { NOTICE }
@@ -24,101 +25,138 @@ public class ServerManager : MonoBehaviour
     bool isServerOn;
     int port = 19900;
 
-    void Update()
+    void RecvMsg()
     {
         if (!isServerOn) return;
 
-        try
+        while (isServerOn)
         {
-            foreach (var c in clients)
+
+
+            try
             {
-                if (!IsConnected(c.client))
+
+
+                foreach (var c in clients)
                 {
-                    c.client.Close();
-                    clients.Remove(c);
-                }
-                else
-                {
-                    NetworkStream s = c.client.GetStream();
-                    if (s.DataAvailable)
+                    if (!IsConnected(c.client))
                     {
-                        StreamReader reader = new StreamReader(s);
-
-                        string data = reader.ReadLine();
-
-                        if (data != null)
-                        {
-                            OnIncommingData(c, data);
-                        }
+                        c.client.Close();
+                        clients.Remove(c);
                     }
+                    else
+                    {
+                        NetworkStream s = c.client.GetStream();
+                        if (s.DataAvailable)
+                        {
+                            StreamReader reader = new StreamReader(s);
 
+                            string data = reader.ReadLine();
+
+                            if (data != null)
+                            {
+                                SyncEnqueue(data);
+                            }
+                        }
+
+                    }
                 }
             }
-        }
-        catch (Exception e)
-        {
-            Debug.Log("ErrMsg : " + e);
+
+            catch (Exception e)
+            {
+                Debug.Log("ErrMsg : " + e);
+            }
         }
 
     }
 
+    void GetIpAddress()
+    {
+        var addresses = Dns.GetHostAddresses(Dns.GetHostName());
+
+        foreach(var ip in addresses)
+        {
+            if (ip.AddressFamily == AddressFamily.InterNetwork)
+                Debug.Log(ip);
+        }
+    }
+
     //Player:P1&Type:Notice&Value:ConnectNotice
 
-    void OnIncommingData(Client c, string data)
+    void Update()
     {
-        Debug.Log(data);
 
-        PlayerNum recvPlayer = PlayerNum.ERROR;
-        string[] splitData = data.Split('&');
-        string[] valueData;
-        string[] playerData = splitData[0].Split(':');
-        switch (playerData[1])
+        int msgCount = GetCount();
+        if (msgCount > 0)
         {
-            case "P1":
-                recvPlayer = PlayerNum.P1;
-                break;
-            case "P2":
-                recvPlayer = PlayerNum.P2;
-                break;
-        }
-        string[] typeData = splitData[1].Split(':');
-        switch (typeData[1])
-        {
-            case "NOTICE":
-                valueData = splitData[2].Split(':');
+            for (int loop = 0; loop < msgCount; ++loop)
+            {
+                string data = SyncDequeue();
+                //Debug.Log(data);
 
-                switch (valueData[1])
+                PlayerNum recvPlayer = PlayerNum.ERROR;
+                string[] splitData = data.Split('&');
+                string[] valueData;
+                string[] playerData = splitData[0].Split(':');
+                switch (playerData[1])
                 {
-                    case "CONNECTNOTICE":
-                        c.pNum = recvPlayer;
-                        
-                        foreach (var cl in clients)
+                    case "P1":
+                        recvPlayer = PlayerNum.P1;
+                        break;
+                    case "P2":
+                        recvPlayer = PlayerNum.P2;
+                        break;
+                }
+                string[] typeData = splitData[1].Split(':');
+                switch (typeData[1])
+                {
+                    case "NOTICE":
+                        valueData = splitData[2].Split(':');
+
+                        switch (valueData[1])
                         {
-                            if (cl.pNum != recvPlayer)
-                            {
-                                UniCast(recvPlayer, cl.pNum, "Type:NOTICE&Value:CONNECTCOMPLETE");
-                            }
+                            case "CONNECTNOTICE":
+
+                                foreach (var cl in clients)
+                                {
+
+                                    if (cl.pNum == PlayerNum.ERROR)
+                                    {
+                                        cl.pNum = recvPlayer;
+                                    }
+                                }
+
+                                foreach (var cl in clients)
+                                {
+                                    
+                                    if (cl.pNum != recvPlayer)
+                                    {
+                                        UniCast(recvPlayer, cl.pNum, "Type:NOTICE&Value:CONNECTCOMPLETE");
+                                    }
+                                }
+
+                                BroadCast(recvPlayer, "Type:NOTICE&Value:CONNECTCOMPLETE");
+                                break;
+
+                            case "GAMESTART":
+                                BroadCast(recvPlayer, "Type:NOTICE&Value:GAMESTART");
+                                break;
                         }
-
-                        BroadCast(recvPlayer, "Type:NOTICE&Value:CONNECTCOMPLETE");
                         break;
-                        
-                    case "GAMESTART":
-                        BroadCast(recvPlayer, "Type:NOTICE&Value:GAMESTART");
-                        break;
-                }
-                break;
 
-            case "COMMAND":
-                string[] commandTypeData = splitData[2].Split(':');
+                    case "COMMAND":
+                        string[] commandTypeData = splitData[2].Split(':');
 
-                switch (commandTypeData[1])
-                {
-                    case "MOVE":
-                        BroadCast(recvPlayer, "Type:COMMAND&CommandType:MOVE&" + splitData[3]); ;
+                        switch (commandTypeData[1])
+                        {
+                            case "MOVE":
+                                BroadCast(recvPlayer, "Type:COMMAND&CommandType:MOVE&" + splitData[3]); ;
+                                break;
+                        }
                         break;
                 }
-                break;
+            }
         }
 
     }
@@ -155,7 +193,7 @@ public class ServerManager : MonoBehaviour
 
         string data = string.Format("Player:{0}&{1}", pNum.ToString(), msg);
 
-        writer.WriteLine(data);
+        writer.WriteLine(msg);
         writer.Flush();
     }
 
@@ -170,7 +208,7 @@ public class ServerManager : MonoBehaviour
 
             string data = string.Format("Player:{0}&{1}", pNum.ToString(), msg);
 
-            Debug.Log(c.pNum.ToString() + " " + data);
+            //Debug.Log(c.pNum.ToString() + " " + data);
 
             writer.WriteLine(data);
             writer.Flush();
@@ -196,9 +234,16 @@ public class ServerManager : MonoBehaviour
 
         server = new TcpListener(IPAddress.Any, port);
         server.Start();
+
         isServerOn = true;
 
         StartAccept();
+
+        recvThread = new Thread(new ThreadStart(RecvMsg));
+        recvThread.Start();
+
+        GetIpAddress();
+
     }
 
     void StartAccept()
@@ -214,6 +259,51 @@ public class ServerManager : MonoBehaviour
         clients.Add(new Client(server.EndAcceptTcpClient(ar)));
         StartAccept();
     }
+
+
+    Thread recvThread;
+
+    
+    Queue<string> msgQueue = new Queue<string>();
+
+    public void Enqueue(string str)
+    {
+        msgQueue.Enqueue(str);
+    }
+
+    public void SyncEnqueue(string str)
+    {
+        lock (msgQueue)
+        {
+            msgQueue.Enqueue(str);
+        }
+    }
+
+    public string Dequeue()
+    {
+        return msgQueue.Dequeue();
+    }
+
+    public string SyncDequeue()
+    {
+        string str;
+        lock (msgQueue)
+        {
+            str = msgQueue.Dequeue();
+        }
+        return str;
+    }
+
+    public int GetCount()
+    {
+        int count;
+        lock (msgQueue)
+        {
+            count = msgQueue.Count;
+        }
+        return count;
+    }
+
 }
 
 public class Client
@@ -224,6 +314,7 @@ public class Client
     public Client(TcpClient _client)
     {
         client = _client;
+        pNum = PlayerNum.ERROR;
     }
 
 
